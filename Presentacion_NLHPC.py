@@ -144,19 +144,18 @@ model_ffnn.summary()
 # In[17]:
 
 
-model_ffnn.fit(X_train, y_train, epochs = 5, batch_size = 100)
+fnnn_fit = model_ffnn.fit(X_train, y_train, epochs = 250, batch_size = 100,verbose = 0)
 
 
 # In[18]:
 
 
-model_ffnn.fit(X_train, y_train, epochs = 250, batch_size = 100)
-
-
-# In[ ]:
-
-
-
+fig = plt.figure(figsize = (7*(1+np.sqrt(5))/2,7))
+plt.plot(fnnn_fit.history['mean_absolute_percentage_error'])
+plt.xlabel('Epochs')
+plt.ylabel('Mean Absolute Percentage Error, %')
+plt.title('Evolución del MAPE en el set de entrenamiento')
+plt.show()
 
 
 # ## 3.- Evaluación
@@ -241,13 +240,18 @@ model_LSTM1.summary()
 # In[25]:
 
 
-model_LSTM1.fit(X_train_lstm, Y_train_lstm, epochs = 5, batch_size = 100)
+lstm_fit = model_LSTM1.fit(X_train_lstm, Y_train_lstm, epochs = 250, batch_size = 100,verbose = 0)
 
 
 # In[26]:
 
 
-model_LSTM1.fit(X_train_lstm, Y_train_lstm, epochs = 250, batch_size = 100)
+fig = plt.figure(figsize = (7*(1+np.sqrt(5))/2,7))
+plt.plot(lstm_fit.history['mean_absolute_percentage_error'])
+plt.xlabel('Epochs')
+plt.ylabel('Mean Absolute Percentage Error, %')
+plt.title('Evolución del MAPE en el set de entrenamiento')
+plt.show()
 
 
 # ## 3.- Evaluación
@@ -280,50 +284,107 @@ df_2022_LR = reg.predict(df_2022_predictores)
 # In[30]:
 
 
+# # df_2022_target, pred_2022_FFNN, pred_2022_LSTM
+# font = {'family': 'serif',
+#         'color':  'red',
+#         'weight': 'normal',
+#         'size': 16,
+#         'alpha': 0.3
+#         }
+
+# fig = plt.figure(figsize = (7*(1+np.sqrt(5))/2,7))
+
+# plt.axhline(y = 0, color = 'k', linestyle = '-',linewidth = 1)
+# plt.axhline(y = 50, color = 'r', linestyle = '-', alpha = 0.3)
+# plt.axhline(y = 80, color = 'r', linestyle = '-', alpha = 0.3)
+# plt.axhline(y = 110, color = 'r', linestyle = '-', alpha = 0.3)
+# plt.axhline(y = 170, color = 'r', linestyle = '-', alpha = 0.3)
+
+
+# plt.plot(df_2022_target, '-k', label = r'Medición')
+# plt.plot(df_2022_target.index[1::],pred_2022_FFNN[0:-1], '-c', label = r'FFNN')
+# plt.plot(df_2022_target.index[4::],pred_2022_LSTM, '-.m', label = r'LSTM')
+# plt.plot(df_2022_target.index[1::],df_2022_LR[0:-1], '--y', label = r'LR')
+
+# plt.legend()
+
+# plt.text(df_2022_target.index[0], 50, r'Regular', font)
+# plt.text(df_2022_target.index[0], 80, r'Alerta', font)
+# plt.text(df_2022_target.index[0], 110, r'Pre-emergencia', font)
+# plt.text(df_2022_target.index[0], 170, r'Emergencia', font)
+
+# #plt.xticks(range(len(df_2022_target.index)),df_2022_target.index)
+# plt.title(r'Comparación de Predicciones')
+# plt.xlabel(r'Fechas')
+# plt.ylabel(r'Concentración de PM2.5, $\mu g/m³$')
+
+# plt.show()
+
+
+# In[46]:
+
+
 # df_2022_target, pred_2022_FFNN, pred_2022_LSTM
 font = {'family': 'serif',
-        'color':  'red',
+        'color':  'blue',
         'weight': 'normal',
         'size': 16,
         'alpha': 0.3
         }
 
-plt.figure(figsize = (7*(1+np.sqrt(5))/2,7))
+fig, axs = plt.subplots(2,1,figsize = (7*(1+np.sqrt(5))/2,8), sharex = True, sharey = True)
 
-plt.axhline(y = 0, color = 'k', linestyle = '-',linewidth = 1)
-plt.axhline(y = 50, color = 'r', linestyle = '-', alpha = 0.3)
-plt.axhline(y = 80, color = 'r', linestyle = '-', alpha = 0.3)
-plt.axhline(y = 110, color = 'r', linestyle = '-', alpha = 0.3)
-plt.axhline(y = 170, color = 'r', linestyle = '-', alpha = 0.3)
+axs[0].axhline(y = 0, color = 'k', linestyle = '-',linewidth = 1)
+axs[0].axhline(y = 50, color = 'b', linestyle = '-', alpha = 0.3)
+axs[0].axhline(y = 80, color = 'b', linestyle = '-', alpha = 0.3)
+axs[0].axhline(y = 110, color = 'b', linestyle = '-', alpha = 0.3)
+axs[0].axhline(y = 170, color = 'b', linestyle = '-', alpha = 0.3)
 
+axs[0].plot(df_2022_target, '-k', label = r'Medición')
+axs[0].plot(df_2022_target.index[1::],pred_2022_FFNN[0:-1], '-.g', label = r'FFNN')
+#axs[0].plot(df_2022_target.index[4::],pred_2022_LSTM, '-.m', label = r'LSTM')
+axs[0].plot(df_2022_target.index[1::],df_2022_LR[0:-1], '--y', label = r'LR')
 
-plt.plot(df_2022_target, '-k', label = r'Medición')
-plt.plot(df_2022_target.index[1::],pred_2022_FFNN[0:-1], '-c', label = r'FFNN')
-plt.plot(df_2022_target.index[4::],pred_2022_LSTM, '-.m', label = r'LSTM')
-plt.plot(df_2022_target.index[1::],df_2022_LR[0:-1], '--y', label = r'LR')
+axs[0].legend()
 
-plt.legend()
+axs[0].text(df_2022_target.index[0], 50, r'Regular', font)
+axs[0].text(df_2022_target.index[0], 80, r'Alerta', font)
+axs[0].text(df_2022_target.index[0], 110, r'Pre-emergencia', font)
+axs[0].text(df_2022_target.index[0], 170, r'Emergencia', font)
 
-plt.text(df_2022_target.index[0], 50, r'Regular', font)
-plt.text(df_2022_target.index[0], 80, r'Alerta', font)
-plt.text(df_2022_target.index[0], 110, r'Pre-emergencia', font)
-plt.text(df_2022_target.index[0], 170, r'Emergencia', font)
+axs[1].axhline(y = 0, color = 'k', linestyle = '-',linewidth = 1)
+axs[1].axhline(y = 50, color = 'b', linestyle = '-', alpha = 0.3)
+axs[1].axhline(y = 80, color = 'b', linestyle = '-', alpha = 0.3)
+axs[1].axhline(y = 110, color = 'b', linestyle = '-', alpha = 0.3)
+axs[1].axhline(y = 170, color = 'b', linestyle = '-', alpha = 0.3)
+
+axs[1].plot(df_2022_target, '-k', label = r'Medición')
+#axs[1].plot(df_2022_target.index[1::],pred_2022_FFNN[0:-1], '-c', label = r'FFNN')
+axs[1].plot(df_2022_target.index[4::],pred_2022_LSTM, '-.m', label = r'LSTM')
+axs[1].plot(df_2022_target.index[1::],df_2022_LR[0:-1], '--y', label = r'LR')
+
+axs[1].legend()
+
+axs[1].text(df_2022_target.index[0], 50, r'Regular', font)
+axs[1].text(df_2022_target.index[0], 80, r'Alerta', font)
+axs[1].text(df_2022_target.index[0], 110, r'Pre-emergencia', font)
+axs[1].text(df_2022_target.index[0], 170, r'Emergencia', font)
 
 #plt.xticks(range(len(df_2022_target.index)),df_2022_target.index)
-plt.title(r'Comparación de Predicciones')
+plt.suptitle(r'Comparación de Predicciones')
 plt.xlabel(r'Fechas')
-plt.ylabel(r'Concentración de PM2.5, $\mu g/m³$')
-
+#plt.ylabel(r'Concentración de PM2.5, $\mu g/m³$')
+fig.text(0.04, 0.5, r'Concentración de PM2.5, $\mu g/m³$', va='center', rotation='vertical')
 plt.show()
 
 
-# In[31]:
+# In[32]:
 
 
 # AGREGAR CODIGO PARA CONTEO DE ERRORES
 
 
-# In[32]:
+# In[33]:
 
 
 eval_modelos = {'FFNN':np.zeros((1,5)),
@@ -367,7 +428,7 @@ for medicion, FFNN, LSTM, LR in zip(df_2022_target.values[4::], pred_2022_FFNN[3
         eval_modelos['LR'][0][4] = eval_modelos['LR'][0][4] + 1  
 
 
-# In[33]:
+# In[34]:
 
 
 eval_modelos
