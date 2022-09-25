@@ -12,7 +12,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
-#from sklearn.preprocessing import StandardScaler
 
 import tensorflow as tf
 
@@ -155,6 +154,8 @@ plt.plot(fnnn_fit.history['mean_absolute_percentage_error'])
 plt.xlabel('Epochs')
 plt.ylabel('Mean Absolute Percentage Error, %')
 plt.title('Evolución del MAPE en el set de entrenamiento')
+plt.yscale('log')
+plt.ylim([10**1,10**3])
 plt.show()
 
 
@@ -178,6 +179,8 @@ pred_2022_FFNN = model_ffnn.predict(df_2022_predictores)
 
 # ## 0.- Preprocesamiento LSTM
 
+# <img src="time_series.png">
+
 # In[21]:
 
 
@@ -196,13 +199,11 @@ def rshp_features_lstm(features, n_steps):
 # In[22]:
 
 
-#ini_batch = df_ml_predictores.shape[0]
-#n_features = df_ml_predictores.shape[1]
 n_steps = 5
 
-new_features_n = rshp_features_lstm(df_ml_predictores,n_steps)
+predictores_lstm = rshp_features_lstm(df_ml_predictores,n_steps)
 
-new_target_n = df_ml_target.drop(df_ml_target.index[0:n_steps-1])
+target_lstm = df_ml_target.drop(df_ml_target.index[0:n_steps-1])
 
 X_lstm_2022 = rshp_features_lstm(df_2022_predictores, n_steps)
 
@@ -210,7 +211,7 @@ X_lstm_2022 = rshp_features_lstm(df_2022_predictores, n_steps)
 # In[23]:
 
 
-X_train_lstm, X_test_lstm, Y_train_lstm, Y_test_lstm = train_test_split(new_features_n, new_target_n.values, test_size = 0.30, random_state = 42)
+X_train_lstm, X_test_lstm, Y_train_lstm, Y_test_lstm = train_test_split(predictores_lstm, target_lstm.values, test_size = 0.30, random_state = 42)
 
 
 # ## 1.- Arquitectura
@@ -218,21 +219,17 @@ X_train_lstm, X_test_lstm, Y_train_lstm, Y_test_lstm = train_test_split(new_feat
 # In[24]:
 
 
-model_LSTM1 = tf.keras.models.Sequential()
+model_LSTM = tf.keras.models.Sequential()
 
-model_LSTM1.add(tf.keras.layers.LSTM(50,input_shape=(X_train_lstm.shape[1],X_train_lstm.shape[2]), activation = tf.keras.activations.relu))
+model_LSTM.add(tf.keras.layers.LSTM(50,input_shape=(X_train_lstm.shape[1],X_train_lstm.shape[2]), activation = tf.keras.activations.relu))
 
+model_LSTM.add(tf.keras.layers.Dense(1, activation = tf.keras.activations.linear))
 
-model_LSTM1.add(tf.keras.layers.Dense(1, activation = tf.keras.activations.linear))
-
-model_LSTM1.compile(optimizer = 'adam',
+model_LSTM.compile(optimizer = 'adam',
                    loss = 'mean_squared_error',
                    metrics = ['mean_absolute_error','mean_squared_error','mean_absolute_percentage_error'])
 
-#input_shape = X_train_lstm.shape[1],X_train_lstm.shape[2])
-#model_LSTM1.build((2, 9))
-
-model_LSTM1.summary()
+model_LSTM.summary()
 
 
 # ## 2.- Entrenamiento
@@ -240,7 +237,7 @@ model_LSTM1.summary()
 # In[25]:
 
 
-lstm_fit = model_LSTM1.fit(X_train_lstm, Y_train_lstm, epochs = 250, batch_size = 100,verbose = 0)
+lstm_fit = model_LSTM.fit(X_train_lstm, Y_train_lstm, epochs = 250, batch_size = 100,verbose = 0)
 
 
 # In[26]:
@@ -251,28 +248,36 @@ plt.plot(lstm_fit.history['mean_absolute_percentage_error'])
 plt.xlabel('Epochs')
 plt.ylabel('Mean Absolute Percentage Error, %')
 plt.title('Evolución del MAPE en el set de entrenamiento')
+plt.yscale('log')
+plt.ylim([10**1,10**3])
 plt.show()
 
-
-# ## 3.- Evaluación
 
 # In[27]:
 
 
-loss, mae, mse, mape = model_LSTM1.evaluate(X_test_lstm,Y_test_lstm)
+lstm_fit.history['mean_absolute_percentage_error'][-1]
 
 
-# ## 4.- Predicción
+# ## 3.- Evaluación
 
 # In[28]:
 
 
-pred_2022_LSTM = model_LSTM1.predict(X_lstm_2022)
+loss, mae, mse, mape = model_LSTM.evaluate(X_test_lstm,Y_test_lstm)
+
+
+# ## 4.- Predicción
+
+# In[29]:
+
+
+pred_2022_LSTM = model_LSTM.predict(X_lstm_2022)
 
 
 # # Comparación de modelos
 
-# In[29]:
+# In[30]:
 
 
 from sklearn.linear_model import LinearRegression
@@ -281,7 +286,7 @@ reg = LinearRegression().fit(X_train, y_train)
 df_2022_LR = reg.predict(df_2022_predictores) 
 
 
-# In[30]:
+# In[31]:
 
 
 # # df_2022_target, pred_2022_FFNN, pred_2022_LSTM
@@ -321,7 +326,44 @@ df_2022_LR = reg.predict(df_2022_predictores)
 # plt.show()
 
 
-# In[46]:
+# In[32]:
+
+
+# df_2022_target, pred_2022_FFNN, pred_2022_LSTM
+font = {'family': 'serif',
+        'color':  'blue',
+        'weight': 'normal',
+        'size': 16,
+        'alpha': 0.3
+        }
+
+fig = plt.figure(figsize = (7*(1+np.sqrt(5))/2,7))
+
+plt.axhline(y = 0, color = 'k', linestyle = '-',linewidth = 1)
+plt.axhline(y = 50, color = 'b', linestyle = '-', alpha = 0.3)
+plt.axhline(y = 80, color = 'b', linestyle = '-', alpha = 0.3)
+plt.axhline(y = 110, color = 'b', linestyle = '-', alpha = 0.3)
+plt.axhline(y = 170, color = 'b', linestyle = '-', alpha = 0.3)
+
+plt.plot(df_2022_target, '-k', label = r'Medición')
+
+#plt.legend()
+
+plt.text(df_2022_target.index[0], 50, r'Regular', font)
+plt.text(df_2022_target.index[0], 80, r'Alerta', font)
+plt.text(df_2022_target.index[0], 110, r'Pre-emergencia', font)
+plt.text(df_2022_target.index[0], 170, r'Emergencia', font)
+
+
+#plt.xticks(range(len(df_2022_target.index)),df_2022_target.index)
+plt.title(r'Evolución de PM2.5 a lo largo de 2022')
+plt.xlabel(r'Fechas')
+plt.ylabel(r'Concentración de PM2.5, $\mu g/m³$')
+#fig.text(0.04, 0.5, r'Concentración de PM2.5, $\mu g/m³$', va='center', rotation='vertical')
+plt.show()
+
+
+# In[33]:
 
 
 # df_2022_target, pred_2022_FFNN, pred_2022_LSTM
@@ -341,7 +383,7 @@ axs[0].axhline(y = 110, color = 'b', linestyle = '-', alpha = 0.3)
 axs[0].axhline(y = 170, color = 'b', linestyle = '-', alpha = 0.3)
 
 axs[0].plot(df_2022_target, '-k', label = r'Medición')
-axs[0].plot(df_2022_target.index[1::],pred_2022_FFNN[0:-1], '-.g', label = r'FFNN')
+axs[0].plot(df_2022_target.index[1::],pred_2022_FFNN[0:-1], '-.r', label = r'FFNN')
 #axs[0].plot(df_2022_target.index[4::],pred_2022_LSTM, '-.m', label = r'LSTM')
 axs[0].plot(df_2022_target.index[1::],df_2022_LR[0:-1], '--y', label = r'LR')
 
@@ -360,7 +402,7 @@ axs[1].axhline(y = 170, color = 'b', linestyle = '-', alpha = 0.3)
 
 axs[1].plot(df_2022_target, '-k', label = r'Medición')
 #axs[1].plot(df_2022_target.index[1::],pred_2022_FFNN[0:-1], '-c', label = r'FFNN')
-axs[1].plot(df_2022_target.index[4::],pred_2022_LSTM, '-.m', label = r'LSTM')
+axs[1].plot(df_2022_target.index[(n_steps-1)::],pred_2022_LSTM, '-.m', label = r'LSTM')
 axs[1].plot(df_2022_target.index[1::],df_2022_LR[0:-1], '--y', label = r'LR')
 
 axs[1].legend()
@@ -378,13 +420,13 @@ fig.text(0.04, 0.5, r'Concentración de PM2.5, $\mu g/m³$', va='center', rotati
 plt.show()
 
 
-# In[32]:
+# In[34]:
 
 
 # AGREGAR CODIGO PARA CONTEO DE ERRORES
 
 
-# In[33]:
+# In[35]:
 
 
 eval_modelos = {'FFNN':np.zeros((1,5)),
@@ -428,7 +470,7 @@ for medicion, FFNN, LSTM, LR in zip(df_2022_target.values[4::], pred_2022_FFNN[3
         eval_modelos['LR'][0][4] = eval_modelos['LR'][0][4] + 1  
 
 
-# In[34]:
+# In[36]:
 
 
 eval_modelos
