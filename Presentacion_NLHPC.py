@@ -179,7 +179,7 @@ pred_2022_FFNN = model_ffnn.predict(df_2022_predictores)
 
 # ## 0.- Preprocesamiento LSTM
 
-# <img src="time_series.png">
+# <img src= "Datos/time_series.png">
 
 # In[21]:
 
