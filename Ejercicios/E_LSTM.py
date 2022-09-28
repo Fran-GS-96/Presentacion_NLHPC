@@ -138,3 +138,4 @@ plt.savefig('Comparacion_datos_lstm.png')
 
 print('MAPE del set de entrenamiento: ', np.round(lstm_fit.history['mean_absolute_percentage_error'][-1],3))
 print('MAPE del set de test: ', np.round(mape,3))
+print('La correlación de la serie de datos con la predicción es: ', np.round(np.corrcoef(np.squeeze(df_2022_target[n_steps-1::].values), np.squeeze(pred_2022_LSTM))[0,1],5))
