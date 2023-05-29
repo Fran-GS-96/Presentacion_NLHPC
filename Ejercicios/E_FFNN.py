@@ -1,6 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# ## **Ejercicios propuestos:**
+# 
+# * **Arquitectura:**
+#     1. Cambiar la cantidad de neuronas en cada capa
+#     2. Cambiar la función de activación de cada capa (relu, softmax, linear, tanh)
+#     3. Agregar otra capa de neuronas
+# * **Entrenamiento:** 
+#     1. Modificar la cantidad de epochs
+#     2. Modificar el batch_size
+
+# # Paquetes
+
+# In[1]:
+
+
 import os
 import pandas as pd
 import numpy as np
@@ -14,9 +29,16 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 
 
-#Datos
+# # Datos
+
+# In[2]:
+
 
 path = os.getcwd()
+
+
+# In[3]:
+
 
 df_ml_predictores = pd.read_csv('df_ml_predictores.csv', index_col = [0])
 df_ml_predictores.set_index(pd.to_datetime(df_ml_predictores.index), inplace = True)
@@ -30,16 +52,27 @@ df_2022_predictores.set_index(pd.to_datetime(df_2022_predictores.index), inplace
 df_2022_target = pd.read_csv('df_2022_target.csv', index_col = [0])
 df_2022_target.set_index(pd.to_datetime(df_2022_target.index), inplace = True)
 
+
+# In[4]:
+
+
 df_ml_predictores.index
 
-#Entrenamiento y Validación
+
+# ## Entrenamiento y Validación
+
+# In[5]:
+
 
 X_train, X_test, y_train, y_test = train_test_split(df_ml_predictores, df_ml_target, test_size = 0.30, random_state = 42)
 
 
-# Feed Forward Neural Network
+# # Feed Forward Neural Network
 
-#1.- Arquitectura
+# ## 1.- Arquitectura
+
+# In[6]:
+
 
 model_ffnn = tf.keras.models.Sequential()
 
@@ -60,9 +93,16 @@ model_ffnn.build(input_shape)
 model_ffnn.summary()
 
 
-#2.- Entrenamiento
+# ## 2.- Entrenamiento
+
+# In[7]:
+
 
 fnnn_fit = model_ffnn.fit(X_train, y_train, epochs = 250, batch_size = 100)
+
+
+# In[8]:
+
 
 fig = plt.figure(figsize = (7*(1+np.sqrt(5))/2,7))
 plt.plot(fnnn_fit.history['mean_absolute_percentage_error'])
@@ -76,16 +116,26 @@ plt.ylim([10**1,10**3])
 plt.savefig('MAPE_entrenamiento_ffnn.png')
 
 
-#3.- Evaluación
+# ## 3.- Evaluación
+
+# In[9]:
+
 
 loss, mae, mse, mape = model_ffnn.evaluate(X_test,y_test)
 
-#4.- Predicción
+
+# ## 4.- Predicción
+
+# In[10]:
+
 
 pred_2022_FFNN = model_ffnn.predict(df_2022_predictores)
 
 
-#Comparación de modelos
+# # Comparación de modelos
+
+# In[11]:
+
 
 font = {'family': 'serif',
         'color':  'blue',
@@ -120,6 +170,11 @@ plt.ylabel(r'Concentración de PM2.5, $\mu g/m³$')
 
 plt.savefig('Comparacion_datos_ffnn.png')
 
+
+# In[12]:
+
+
 print('MAPE del set de entrenamiento: ', np.round(fnnn_fit.history['mean_absolute_percentage_error'][-1],3))
 print('MAPE del set de test: ', np.round(mape,3))
 print('La correlación de la serie de datos con la predicción es: ', np.round(np.corrcoef(np.squeeze(df_2022_target[1::].values), np.squeeze(pred_2022_FFNN[0:-1]))[0,1],3))
+
