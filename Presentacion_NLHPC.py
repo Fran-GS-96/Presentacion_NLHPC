@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 
 import tensorflow as tf
 
-from keras.layers import LSTM, Dropout, Dense
+from keras.layers import LSTM, Dropout, Dense, Conv1D, Attention
 
 
 # # Visualizacion previa de datos
@@ -25,98 +25,53 @@ from keras.layers import LSTM, Dropout, Dense
 
 path = os.getcwd()
 
-
-# In[3]:
-
-
 c_df = pd.read_csv(os.path.join(path, 'Datos', 'Data_Coyhaique.csv'), index_col = [0])
 c_df = c_df.set_index(pd.to_datetime(c_df.index))
-
-
-# In[4]:
-
 
 c_df.isna().sum()/len(c_df)*100
 
 
-# In[5]:
+# In[3]:
 
 
 c_df = c_df.fillna(value = c_df.mean())
 
-
-# In[6]:
-
-
 c_df_mean = c_df.resample('D',kind = 'timestamp').mean()
-
-
-# In[7]:
-
-
-c_df_mean
-
-
-# In[8]:
-
 
 c_df_mean.plot(subplots = True, layout = (4,4), figsize = (7*(1+np.sqrt(5))/2,7), rot=45);
 
 
 # # Separación de datos
 
-# In[9]:
+# In[4]:
 
 
 df_predictores = c_df_mean
 df_predictores
 
 
-# In[10]:
+# In[5]:
 
 
 met_col = ['Presion','Temperatura','HR','RapViento','DoY','DoW']
 
-
-# In[11]:
-
-
-for col in met_col:    
-    df_predictores[col+'_forecast'] = df_predictores[col].shift(-1)
-
-
-# In[12]:
-
-
+for col in met_col:
+    if col == 'DoY' or col == 'DoW':
+        df_predictores[col+'_forecast'] = df_predictores[col].shift(-1)
+    else:
+        df_predictores[col+'_forecast'] = df_predictores[col].shift(-1)*np.random.randint(90,110, df_predictores[col].shape)/100
+    
 df_target = c_df_mean['PM25']
 df_target = df_target.shift(-1)
 
-
-# In[13]:
-
-
 df_target.drop(df_target.index[-1], inplace = True)
 df_predictores.drop(c_df_mean.index[-1], inplace = True)
-
-
-# In[14]:
-
-
-df_target
-
-
-# In[15]:
-
 
 df_ml_predictores = df_predictores.loc['2018':'2021']
 df_ml_target = df_target.loc['2018':'2021']
 
 df_ml_predictores.to_csv('Ejercicios/df_ml_predictores.csv')
 df_ml_target.to_csv('Ejercicios/df_ml_target.csv')
-
-
-# In[16]:
-
 
 df_2022_predictores = df_predictores.loc['2022-01-01':'2022-08-30']
 df_2022_target = df_target.loc['2022-01-01':'2022-08-30']
@@ -125,9 +80,15 @@ df_2022_predictores.to_csv('Ejercicios/df_2022_predictores.csv')
 df_2022_target.to_csv('Ejercicios/df_2022_target.csv')
 
 
+# In[6]:
+
+
+df_predictores
+
+
 # ## Entrenamiento y Validación
 
-# In[17]:
+# In[7]:
 
 
 X_train, X_test, y_train, y_test = train_test_split(df_ml_predictores, df_ml_target, test_size = 0.30, random_state = 42)
@@ -137,15 +98,21 @@ X_train, X_test, y_train, y_test = train_test_split(df_ml_predictores, df_ml_tar
 
 # ## 1.- Arquitectura
 
-# In[18]:
+# In[8]:
 
 
 model_ffnn = tf.keras.models.Sequential()
+model_ffnn.add(Dropout(0.2))
+model_ffnn.add(Dense(16, activation = tf.keras.activations.relu))
+model_ffnn.add(Dense(32, activation = tf.keras.activations.relu))
+model_ffnn.add(Dense(64, activation = tf.keras.activations.relu))
+model_ffnn.add(Dense(128, activation = tf.keras.activations.relu))
+model_ffnn.add(Dense(64, activation = tf.keras.activations.relu))
+model_ffnn.add(Dense(32, activation = tf.keras.activations.relu))
+model_ffnn.add(Dense(16, activation = tf.keras.activations.relu))
+model_ffnn.add(Dense(8, activation = tf.keras.activations.relu))
 
-model_ffnn.add(tf.keras.layers.Dense(50, activation = tf.keras.activations.relu))
-model_ffnn.add(tf.keras.layers.Dense(120, activation = tf.keras.activations.relu))
-model_ffnn.add(tf.keras.layers.Dense(50, activation = tf.keras.activations.relu))
-
+## Última capa indica tarea de la red
 model_ffnn.add(tf.keras.layers.Dense(1, activation = tf.keras.activations.linear))
 
 model_ffnn.compile(optimizer = 'adam',
@@ -160,13 +127,13 @@ model_ffnn.summary()
 
 # ## 2.- Entrenamiento
 
-# In[19]:
+# In[9]:
 
 
 fnnn_fit = model_ffnn.fit(X_train, y_train, epochs = 300, batch_size = 150)
 
 
-# In[20]:
+# In[10]:
 
 
 fig = plt.figure(figsize = (7*(1+np.sqrt(5))/2,7))
@@ -181,7 +148,7 @@ plt.show()
 
 # ## 3.- Evaluación
 
-# In[21]:
+# In[11]:
 
 
 loss, mae, mse, mape = model_ffnn.evaluate(X_test,y_test)
@@ -189,7 +156,7 @@ loss, mae, mse, mape = model_ffnn.evaluate(X_test,y_test)
 
 # ## 4.- Predicción
 
-# In[22]:
+# In[12]:
 
 
 pred_2022_FFNN = model_ffnn.predict(df_2022_predictores)
@@ -201,7 +168,7 @@ pred_2022_FFNN = model_ffnn.predict(df_2022_predictores)
 
 # <img src= "Datos/time_series.png">
 
-# In[23]:
+# In[13]:
 
 
 def reshape_for_lstm(data, timesteps, features):
@@ -229,25 +196,10 @@ def reshape_for_lstm(data, timesteps, features):
     return reshaped_data
 
 
-# In[24]:
+# In[14]:
 
 
-#def rshp_features_lstm(features, n_steps):
-#    ini_batch = features.shape[0]
-#    n_features = features.shape[1]
-#    array_lstm = np.zeros((ini_batch, n_steps, n_features)) 
-#    for i in range(n_features):
-#        for j in range(n_steps):
-#            array_lstm[:,j,i] = np.roll(features.iloc[:,i],-j)
-
-#    array_lstm = np.delete(array_lstm, -(np.array(range(n_steps-1))+1), axis = 0)
-#    return array_lstm
-
-
-# In[25]:
-
-
-n_steps = 4
+n_steps = 3
 
 predictores_lstm = reshape_for_lstm(df_ml_predictores.values,n_steps,df_ml_predictores.shape[1])
 
@@ -256,7 +208,7 @@ target_lstm = df_ml_target.drop(df_ml_target.index[0:n_steps-1])
 X_lstm_2022 = reshape_for_lstm(df_2022_predictores.values, n_steps,df_2022_predictores.shape[1])
 
 
-# In[26]:
+# In[15]:
 
 
 X_train_lstm, X_test_lstm, Y_train_lstm, Y_test_lstm = train_test_split(predictores_lstm, target_lstm.values, test_size = 0.30, random_state = 42)
@@ -264,17 +216,33 @@ X_train_lstm, X_test_lstm, Y_train_lstm, Y_test_lstm = train_test_split(predicto
 
 # ## 1.- Arquitectura
 
-# In[27]:
+# In[16]:
 
 
 model_LSTM = tf.keras.models.Sequential()
 
+#model_LSTM.add(LSTM(32,input_shape=(X_train_lstm.shape[1],X_train_lstm.shape[2]), activation = tf.keras.activations.relu))#,return_sequences=True))
 
+model_LSTM.add(Conv1D(filters=128, kernel_size=3, 
+                      activation= tf.keras.activations.relu, 
+                      input_shape=(X_train_lstm.shape[1],X_train_lstm.shape[2])))
 
-model_LSTM.add(tf.keras.layers.LSTM(50,input_shape=(X_train_lstm.shape[1],X_train_lstm.shape[2]), activation = tf.keras.activations.relu))
-#model_LSTM.add(Dropout(0.2))
+## Capa de LSTM
+model_LSTM.add(LSTM(128, 
+                    activation = tf.keras.activations.relu, 
+                    return_sequences=True))
+model_LSTM.add(LSTM(64, 
+                    activation = tf.keras.activations.relu, 
+                    return_sequences=True))
+model_LSTM.add(LSTM(32, 
+                    activation = tf.keras.activations.relu))
 
-model_LSTM.add(tf.keras.layers.Dense(1, activation = tf.keras.activations.linear))
+## Capa de neuronas clásicas
+model_LSTM.add(Dense(32, 
+                     activation = tf.keras.activations.linear))
+
+## Última capa indica función de la red
+model_LSTM.add(Dense(1, activation = tf.keras.activations.linear))
 
 model_LSTM.compile(optimizer = 'adam',
                    loss = 'mean_squared_error',
@@ -285,26 +253,27 @@ model_LSTM.summary()
 
 # ## 2.- Entrenamiento
 
-# In[28]:
+# In[17]:
 
 
 lstm_fit = model_LSTM.fit(X_train_lstm, Y_train_lstm, epochs = 300, batch_size = 150)
 
 
-# In[29]:
+# In[18]:
 
 
 fig = plt.figure(figsize = (7*(1+np.sqrt(5))/2,7))
-plt.plot(lstm_fit.history['mean_absolute_percentage_error'])
+#plt.plot(lstm_fit.history['mean_absolute_percentage_error'])
+plt.plot(lstm_fit.history['mean_squared_error'])
 plt.xlabel('Epochs')
 plt.ylabel('Mean Absolute Percentage Error, %')
 plt.title('Evolución del MAPE en el set de entrenamiento')
 #plt.yscale('log')
-plt.ylim([0,200])
+#plt.ylim([0,200])
 plt.show()
 
 
-# In[30]:
+# In[19]:
 
 
 #lstm_fit.history['mean_absolute_percentage_error'][-1]
@@ -312,7 +281,7 @@ plt.show()
 
 # ## 3.- Evaluación
 
-# In[31]:
+# In[20]:
 
 
 loss, mae, mse, mape = model_LSTM.evaluate(X_test_lstm,Y_test_lstm)
@@ -320,15 +289,15 @@ loss, mae, mse, mape = model_LSTM.evaluate(X_test_lstm,Y_test_lstm)
 
 # ## 4.- Predicción
 
-# In[32]:
+# In[21]:
 
 
-pred_2022_LSTM = model_LSTM.predict(X_lstm_2022)
+pred_2022_LSTM = np.squeeze(model_LSTM.predict(X_lstm_2022))
 
 
 # # Comparación de modelos
 
-# In[33]:
+# In[22]:
 
 
 from sklearn.linear_model import LinearRegression
@@ -337,7 +306,7 @@ reg = LinearRegression().fit(X_train, y_train)
 df_2022_LR = reg.predict(df_2022_predictores) 
 
 
-# In[34]:
+# In[23]:
 
 
 # df_2022_target, pred_2022_FFNN, pred_2022_LSTM
@@ -392,110 +361,4 @@ plt.xlabel(r'Fechas')
 #plt.ylabel(r'Concentración de PM2.5, $\mu g/m³$')
 fig.text(0.04, 0.5, r'Concentración de PM2.5, $\mu g/m³$', va='center', rotation='vertical')
 plt.show()
-
-
-# In[37]:
-
-
-# AGREGAR CODIGO PARA CONTEO DE ERRORES
-
-
-# In[38]:
-
-
-eval_modelos = {'FFNN':np.zeros((1,5)),
-                'LSTM':np.zeros((1,5)),
-                'LR':np.zeros((1,5))}
-for medicion, FFNN, LSTM, LR in zip(df_2022_target.values[4::], pred_2022_FFNN[3:-1], pred_2022_LSTM, df_2022_LR[0:-1]):
-    # Bueno
-    if medicion < 50 and not(FFNN < 50):
-        eval_modelos['FFNN'][0][0] = eval_modelos['FFNN'][0][0] + 1
-    if medicion < 50 and not(LSTM < 50):
-        eval_modelos['LSTM'][0][0] = eval_modelos['LSTM'][0][0] + 1 
-    if medicion < 50 and not(LR < 50):
-        eval_modelos['LR'][0][0] = eval_modelos['LR'][0][0] + 1 
-    # Regular
-    if medicion > 50 and medicion < 80 and not(FFNN > 50 and FFNN < 80):
-        eval_modelos['FFNN'][0][1] = eval_modelos['FFNN'][0][1] + 1
-    if medicion > 50 and medicion < 80 and not(LSTM > 50 and LSTM < 80):
-        eval_modelos['LSTM'][0][1] = eval_modelos['LSTM'][0][1] + 1
-    if medicion > 50 and medicion < 80 and not(LR > 50 and LR < 80):
-        eval_modelos['LR'][0][1] = eval_modelos['LR'][0][1] + 1
-    # Alerta
-    if medicion > 80 and medicion < 110 and not(FFNN > 80 and FFNN < 110):
-        eval_modelos['FFNN'][0][2] = eval_modelos['FFNN'][0][2] + 1
-    if medicion > 80 and medicion < 110 and not(LSTM > 80 and LSTM < 110):
-        eval_modelos['LSTM'][0][2] = eval_modelos['LSTM'][0][2] + 1
-    if medicion > 80 and medicion < 110 and not(LR > 80 and LR < 110):
-        eval_modelos['LR'][0][2] = eval_modelos['LR'][0][2] + 1
-    # Pre-emergencia
-    if medicion > 110 and medicion < 170 and not(FFNN > 110 and FFNN < 170):
-        eval_modelos['FFNN'][0][3] = eval_modelos['FFNN'][0][3] + 1
-    if medicion > 110 and medicion < 170 and not(LSTM > 110 and LSTM < 170):
-        eval_modelos['LSTM'][0][3] = eval_modelos['LSTM'][0][3] + 1
-    if medicion > 110 and medicion < 170 and not(LR > 110 and LR < 170):
-        eval_modelos['LR'][0][3] = eval_modelos['LR'][0][3] + 1
-    # Emergencia
-    if medicion > 170 and not(FFNN > 110):
-        eval_modelos['FFNN'][0][4] = eval_modelos['FFNN'][0][4] + 1
-    if medicion > 170 and not(LSTM > 170):
-        eval_modelos['LSTM'][0][4] = eval_modelos['LSTM'][0][4] + 1  
-    if medicion > 170 and not(LR > 170):
-        eval_modelos['LR'][0][4] = eval_modelos['LR'][0][4] + 1  
-
-
-# In[39]:
-
-
-eval_modelos
-
-
-# In[40]:
-
-
-eval_modelos = {'FFNN':np.zeros((1,5)),
-                'LSTM':np.zeros((1,5)),
-                'LR':np.zeros((1,5))}
-for medicion, FFNN, LSTM, LR in zip(df_2022_target.values[4::], pred_2022_FFNN[3:-1], pred_2022_LSTM, df_2022_LR[0:-1]):
-    # Bueno
-    if medicion < 50 and not(FFNN < 50):
-        eval_modelos['FFNN'][0][0] = eval_modelos['FFNN'][0][0] + 1
-    if medicion < 50 and not(LSTM < 50):
-        eval_modelos['LSTM'][0][0] = eval_modelos['LSTM'][0][0] + 1 
-    if medicion < 50 and not(LR < 50):
-        eval_modelos['LR'][0][0] = eval_modelos['LR'][0][0] + 1 
-    # Regular
-    if medicion > 50 and medicion < 80 and not(FFNN > 50 and FFNN < 80) and FFNN < 50:
-        eval_modelos['FFNN'][0][1] = eval_modelos['FFNN'][0][1] + 1
-    if medicion > 50 and medicion < 80 and not(LSTM > 50 and LSTM < 80) and LSTM < 50:
-        eval_modelos['LSTM'][0][1] = eval_modelos['LSTM'][0][1] + 1
-    if medicion > 50 and medicion < 80 and not(LR > 50 and LR < 80) and LR < 50:
-        eval_modelos['LR'][0][1] = eval_modelos['LR'][0][1] + 1
-    # Alerta
-    if medicion > 80 and medicion < 110 and not(FFNN > 80 and FFNN < 110) and FFNN < 80:
-        eval_modelos['FFNN'][0][2] = eval_modelos['FFNN'][0][2] + 1
-    if medicion > 80 and medicion < 110 and not(LSTM > 80 and LSTM < 110) and LSTM < 80: 
-        eval_modelos['LSTM'][0][2] = eval_modelos['LSTM'][0][2] + 1
-    if medicion > 80 and medicion < 110 and not(LR > 80 and LR < 110) and LR < 80:
-        eval_modelos['LR'][0][2] = eval_modelos['LR'][0][2] + 1
-    # Pre-emergencia
-    if medicion > 110 and medicion < 170 and not(FFNN > 110 and FFNN < 170) and FFNN < 110:
-        eval_modelos['FFNN'][0][3] = eval_modelos['FFNN'][0][3] + 1
-    if medicion > 110 and medicion < 170 and not(LSTM > 110 and LSTM < 170) and LSTM < 110:
-        eval_modelos['LSTM'][0][3] = eval_modelos['LSTM'][0][3] + 1
-    if medicion > 110 and medicion < 170 and not(LR > 110 and LR < 170) and LR < 110:
-        eval_modelos['LR'][0][3] = eval_modelos['LR'][0][3] + 1
-    # Emergencia
-    if medicion > 170 and not(FFNN > 110):
-        eval_modelos['FFNN'][0][4] = eval_modelos['FFNN'][0][4] + 1
-    if medicion > 170 and not(LSTM > 170):
-        eval_modelos['LSTM'][0][4] = eval_modelos['LSTM'][0][4] + 1  
-    if medicion > 170 and not(LR > 170):
-        eval_modelos['LR'][0][4] = eval_modelos['LR'][0][4] + 1  
-
-
-# In[41]:
-
-
-eval_modelos
 
