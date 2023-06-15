@@ -74,23 +74,23 @@ X_train, X_test, y_train, y_test = train_test_split(df_ml_predictores, df_ml_tar
 # In[6]:
 
 
-model_ffnn = tf.keras.models.Sequential()
+model_dnn = tf.keras.models.Sequential()
 
 
-model_ffnn.add(tf.keras.layers.Dense(50, activation = tf.keras.activations.relu))
-model_ffnn.add(tf.keras.layers.Dense(120, activation = tf.keras.activations.relu))
-model_ffnn.add(tf.keras.layers.Dense(50, activation = tf.keras.activations.relu))
+model_dnn.add(tf.keras.layers.Dense(50, activation = tf.keras.activations.relu))
+model_dnn.add(tf.keras.layers.Dense(120, activation = tf.keras.activations.relu))
+model_dnn.add(tf.keras.layers.Dense(50, activation = tf.keras.activations.relu))
 
-model_ffnn.add(tf.keras.layers.Dense(1, activation = tf.keras.activations.linear))
+model_dnn.add(tf.keras.layers.Dense(1, activation = tf.keras.activations.linear))
 
-model_ffnn.compile(optimizer = 'adam',
+model_dnn.compile(optimizer = 'adam',
                    loss = 'mean_squared_error',
                    metrics = ['mean_absolute_error','mean_squared_error','mean_absolute_percentage_error'])
 
 input_shape = X_train.shape
-model_ffnn.build(input_shape)
+model_dnn.build(input_shape)
 
-model_ffnn.summary()
+model_dnn.summary()
 
 
 # ## 2.- Entrenamiento
@@ -98,14 +98,14 @@ model_ffnn.summary()
 # In[7]:
 
 
-fnnn_fit = model_ffnn.fit(X_train, y_train, epochs = 250, batch_size = 100)
+dnn_fit = model_dnn.fit(X_train, y_train, epochs = 250, batch_size = 100)
 
 
 # In[8]:
 
 
 fig = plt.figure(figsize = (7*(1+np.sqrt(5))/2,7))
-plt.plot(fnnn_fit.history['mean_absolute_percentage_error'])
+plt.plot(dnn_fit.history['mean_absolute_percentage_error'])
 plt.xlabel('Epochs')
 plt.ylabel('Mean Absolute Percentage Error, %')
 plt.title('Evolución del MAPE en el set de entrenamiento')
@@ -121,7 +121,7 @@ plt.savefig('MAPE_entrenamiento_ffnn.png')
 # In[9]:
 
 
-loss, mae, mse, mape = model_ffnn.evaluate(X_test,y_test)
+loss, mae, mse, mape = model_dnn.evaluate(X_test,y_test)
 
 
 # ## 4.- Predicción
@@ -129,7 +129,7 @@ loss, mae, mse, mape = model_ffnn.evaluate(X_test,y_test)
 # In[10]:
 
 
-pred_2022_FFNN = model_ffnn.predict(df_2022_predictores)
+pred_2022_DNN = model_dnn.predict(df_2022_predictores)
 
 
 # # Comparación de modelos
@@ -153,7 +153,7 @@ plt.axhline(y = 110, color = 'b', linestyle = '-', alpha = 0.3)
 plt.axhline(y = 170, color = 'b', linestyle = '-', alpha = 0.3)
 
 plt.plot(df_2022_target, '-k', label = r'Medición')
-plt.plot(df_2022_target.index[1::],pred_2022_FFNN[0:-1], '-.r', label = r'FFNN')
+plt.plot(df_2022_target.index[1::],pred_2022_DNN[0:-1], '-.r', label = r'FFNN')
 
 plt.legend()
 
@@ -168,13 +168,13 @@ plt.ylabel(r'Concentración de PM2.5, $\mu g/m³$')
 
 #plt.show()
 
-plt.savefig('Comparacion_datos_ffnn.png')
+plt.savefig('Comparacion_datos_dnn.png')
 
 
 # In[12]:
 
 
-print('MAPE del set de entrenamiento: ', np.round(fnnn_fit.history['mean_absolute_percentage_error'][-1],3))
+print('MAPE del set de entrenamiento: ', np.round(dnn_fit.history['mean_absolute_percentage_error'][-1],3))
 print('MAPE del set de test: ', np.round(mape,3))
-print('La correlación de la serie de datos con la predicción es: ', np.round(np.corrcoef(np.squeeze(df_2022_target[1::].values), np.squeeze(pred_2022_FFNN[0:-1]))[0,1],3))
+print('La correlación de la serie de datos con la predicción es: ', np.round(np.corrcoef(np.squeeze(df_2022_target[1::].values), np.squeeze(pred_2022_DNN[0:-1]))[0,1],3))
 

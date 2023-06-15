@@ -94,35 +94,35 @@ df_predictores
 X_train, X_test, y_train, y_test = train_test_split(df_ml_predictores, df_ml_target, test_size = 0.30, random_state = 42)
 
 
-# # Feed Forward Neural Network
+# # Deep Neural Network
 
 # ## 1.- Arquitectura
 
 # In[8]:
 
 
-model_ffnn = tf.keras.models.Sequential()
-model_ffnn.add(Dropout(0.2))
-model_ffnn.add(Dense(16, activation = tf.keras.activations.relu))
-model_ffnn.add(Dense(32, activation = tf.keras.activations.relu))
-model_ffnn.add(Dense(64, activation = tf.keras.activations.relu))
-model_ffnn.add(Dense(128, activation = tf.keras.activations.relu))
-model_ffnn.add(Dense(64, activation = tf.keras.activations.relu))
-model_ffnn.add(Dense(32, activation = tf.keras.activations.relu))
-model_ffnn.add(Dense(16, activation = tf.keras.activations.relu))
-model_ffnn.add(Dense(8, activation = tf.keras.activations.relu))
+model_dnn = tf.keras.models.Sequential()
+model_dnn.add(Dropout(0.2))
+model_dnn.add(Dense(16, activation = tf.keras.activations.relu))
+model_dnn.add(Dense(32, activation = tf.keras.activations.relu))
+model_dnn.add(Dense(64, activation = tf.keras.activations.relu))
+model_dnn.add(Dense(128, activation = tf.keras.activations.relu))
+model_dnn.add(Dense(64, activation = tf.keras.activations.relu))
+model_dnn.add(Dense(32, activation = tf.keras.activations.relu))
+model_dnn.add(Dense(16, activation = tf.keras.activations.relu))
+model_dnn.add(Dense(8, activation = tf.keras.activations.relu))
 
 ## Última capa indica tarea de la red
-model_ffnn.add(tf.keras.layers.Dense(1, activation = tf.keras.activations.linear))
+model_dnn.add(tf.keras.layers.Dense(1, activation = tf.keras.activations.linear))
 
-model_ffnn.compile(optimizer = 'adam',
+model_dnn.compile(optimizer = 'adam',
                    loss = 'mean_squared_error',
                    metrics = ['mean_absolute_error','mean_squared_error','mean_absolute_percentage_error'])
 
 input_shape = X_train.shape
-model_ffnn.build(input_shape)
+model_dnn.build(input_shape)
 
-model_ffnn.summary()
+model_dnn.summary()
 
 
 # ## 2.- Entrenamiento
@@ -130,7 +130,7 @@ model_ffnn.summary()
 # In[9]:
 
 
-fnnn_fit = model_ffnn.fit(X_train, y_train, epochs = 300, batch_size = 150)
+fnnn_fit = model_dnn.fit(X_train, y_train, epochs = 300, batch_size = 150)
 
 
 # In[10]:
@@ -151,7 +151,7 @@ plt.show()
 # In[11]:
 
 
-loss, mae, mse, mape = model_ffnn.evaluate(X_test,y_test)
+loss, mae, mse, mape = model_dnn.evaluate(X_test,y_test)
 
 
 # ## 4.- Predicción
@@ -159,7 +159,7 @@ loss, mae, mse, mape = model_ffnn.evaluate(X_test,y_test)
 # In[12]:
 
 
-pred_2022_FFNN = model_ffnn.predict(df_2022_predictores)
+pred_2022_DNN = model_dnn.predict(df_2022_predictores)
 
 
 # # Long-Short Term Memory
@@ -326,7 +326,7 @@ axs[0].axhline(y = 110, color = 'b', linestyle = '-', alpha = 0.3)
 axs[0].axhline(y = 170, color = 'b', linestyle = '-', alpha = 0.3)
 
 axs[0].plot(df_2022_target, '-k', label = r'Medición')
-axs[0].plot(df_2022_target.index[1::],pred_2022_FFNN[0:-1], '-.r', label = r'FFNN')
+axs[0].plot(df_2022_target.index[1::],pred_2022_DNN[0:-1], '-.r', label = r'FFNN')
 #axs[0].plot(df_2022_target.index[4::],pred_2022_LSTM, '-.m', label = r'LSTM')
 axs[0].plot(df_2022_target.index[1::],df_2022_LR[0:-1], '--y', label = r'LR')
 
